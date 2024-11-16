@@ -9,6 +9,10 @@ with urllib.request.urlopen("https://services.swpc.noaa.gov/products/geospace/pr
 
     store = Persistance.Store("SolarDB", "SolarWind")
 
+    store.begintrans()
+
     for row in data:
         store.addrecord(row)
+
+    store.endtrans()
 
