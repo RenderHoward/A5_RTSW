@@ -7,7 +7,8 @@ class Store:
         self.database = db
         self.table = self.__URL2TblName(url)
         self.con = sqlite3.connect(self.database)
-        self.insrtstr = "INSERT INTO " + self.table + " (time_tag, speed, density, temperature, bx, by, bz, bt, vx, vy, vz, propagated_time_tag) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+
+        self.earliest = self.latest = self.insrtstr = self.URL = ""
 
         if self.tableexists():
             self.__init_strs()
@@ -21,6 +22,14 @@ class Store:
     def endtrans(self):
         self.con.commit()
 
+    def __init_strs(self) :
+        cur = self.con.cursor()
+        instr = cur.execute( "select * from URL2TBL where TblName = ?", [self.table]).fetchone()[0]
+        cur.close()
+        self.insrtstr = "INSERT INTO " + self.table + " " + instr["InsertStr"]
+        self.URL = instr["URL"]
+        self.refreshtimebracket()
+
     def tableexists(self) -> bool:
         cur = self.con.cursor()
         count = cur.execute("select count(*) from URL2TBL where TBLName = ? COLLATE NOCASE", [self.table] ).fetchone()[0]
@@ -29,6 +38,14 @@ class Store:
 
     def __URL2TblName( self, url ) -> str:
         return Path(url).stem.replace('-', '_')
+
+    def refreshtimebracket(self):
+        cur = self.con.cursor()
+        bounds = cur.execute("select max(time_tag) as end, min(time_tag) as begin from " + self.table).fetchone()
+        self.earliest = bounds["begin"]
+        self.latest   = bounds["end"]
+        cur.close()
+
     def addtable(self, urlstr, data):
         if self.tableexists():
             return
