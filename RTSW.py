@@ -1,12 +1,12 @@
 import urllib.request, json
-import Persistance
+import Persistence
 
+    store = Persistence.Store("SolarDB", urlstr )
 urlstr = "https://services.swpc.noaa.gov/products/geospace/propagated-solar-wind-1-hour.json"
 
 with urllib.request.urlopen(urlstr) as urlstr:
     data = json.load(urlstr)
 
-    store = Persistance.Store("SolarDB", "SolarWind")
 
     store.begintrans()
 
