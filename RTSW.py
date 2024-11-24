@@ -29,6 +29,15 @@ def bracket( tbl, timestamp ) -> []:
 
     return store.bracket(timestamp)
 
+def recordsbetween( tbl, begin, end ):
+    store = Persistence.Store("SolarDB", tbl)
+    store.refreshtimebracket()
+
+    if end > store.latest or begin > store.latest:
+        pullnewest(store)
+
+    return store.recordsbetween( begin, end )
+
 def pullnewest(storage):
     global data
     storage.refreshtimebracket()

@@ -79,7 +79,20 @@ class Store:
 
         return [ {k: row[k] for k in row.keys()} for row in bounds ]
 
+    def recordsbetween(self, starttime, endtime):
+        self.refreshtimebracket()
 
+        endtime = min(endtime, self.latest)
+
+        starttime = max(starttime, self.earliest)
+
+        cur = self.con.cursor()
+
+        results = cur.execute("select * from " + self.table + " where time_tag between ? and ? ", [starttime, endtime])
+
+        rows = results.fetchall()
+
+        return [rows[0].keys()] + [[row[k] for k in row.keys()] for row in rows]
 
     def addtable(self, urlstr, data):
         if self.tableexists():
