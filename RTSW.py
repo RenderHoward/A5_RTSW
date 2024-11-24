@@ -21,6 +21,13 @@ def main():
     store = Persistence.Store("SolarDB", urlstr)
 
     store.addtable( urlstr, data )
+def bracket( tbl, timestamp ) -> []:
+    store = Persistence.Store("SolarDB", tbl)
+
+    if timestamp > store.latest :
+        pullnewest(store)
+
+    return store.bracket(timestamp)
 
 def pullnewest(storage):
     global data

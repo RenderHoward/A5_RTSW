@@ -1,5 +1,8 @@
 import sqlite3
+from http.cookiejar import UTC_ZONES
 from pathlib import Path
+
+from future.backports.datetime import datetime
 
 
 class Store:
@@ -7,6 +10,7 @@ class Store:
         self.database = db
         self.table = self.__URL2TblName(url)
         self.con = sqlite3.connect(self.database)
+        self.con.row_factory = sqlite3.Row
 
         self.earliest = self.latest = self.insrtstr = self.URL = ""
 
@@ -21,13 +25,14 @@ class Store:
 
     def endtrans(self):
         self.con.commit()
+        self.refreshtimebracket()
 
     def __init_strs(self) :
         cur = self.con.cursor()
-        instr = cur.execute( "select * from URL2TBL where TblName = ?", [self.table]).fetchone()[0]
+        result = cur.execute( "select * from URL2TBL where TblName = ?", [self.table]).fetchone()
         cur.close()
-        self.insrtstr = "INSERT INTO " + self.table + " " + instr["InsertStr"]
-        self.URL = instr["URL"]
+        self.insrtstr = "INSERT INTO " + self.table + " " + result["InsertStr"]
+        self.URL = result["URL"]
         self.refreshtimebracket()
 
     def tableexists(self) -> bool:
@@ -45,6 +50,36 @@ class Store:
         self.earliest = bounds["begin"]
         self.latest   = bounds["end"]
         cur.close()
+
+    def bracket(self, timestamp)-> []:
+        self.refreshtimebracket()
+
+        if timestamp > self.latest :
+            return [{ "error" : "no data yet" }]
+
+        if timestamp < self.earliest :
+            return [{ "error" : "data not recorded that early" }]
+
+        cur = self.con.cursor()
+
+        compound_query = "select * from " + self.table + \
+                    " where time_tag between " +\
+                    "(" +\
+                    "	select max(time_tag) from " + self.table +\
+                    "	where time_tag < ?  " +\
+                    ")" +\
+                    "and" +\
+                    "(" +\
+                    "	select min(time_tag) from " + self.table +\
+                    "	where time_tag >= ? " +\
+                    ")"
+
+        bounds = cur.execute( compound_query , [timestamp, timestamp]  ).fetchall()
+        cur.close()
+
+        return [ {k: row[k] for k in row.keys()} for row in bounds ]
+
+
 
     def addtable(self, urlstr, data):
         if self.tableexists():
