@@ -1,8 +1,5 @@
 import sqlite3
-from http.cookiejar import UTC_ZONES
 from pathlib import Path
-
-from future.backports.datetime import datetime
 
 
 class Store:
