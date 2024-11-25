@@ -1,5 +1,6 @@
 import urllib.request, json
 import Persistence
+from bottle import route, run, request, response
 
 def bracket( tbl, timestamp ) -> []:
     store = Persistence.Store("SolarDB", tbl)
@@ -32,4 +33,24 @@ def pullnewest(storage):
             storage.addrecord(row)
 
     storage.endtrans()
+
+@route('/cached/<tbl_name>/<command>')
+
+def get_cached_records(tbl_name, command):
+
+    params = {key: val for (key, val) in request.params.items()}
+
+    response.content_type = 'application/json'
+
+    check = Persistence.Store("SolarDB", tbl_name)
+
+    if not check.tableexists():
+        return json.dumps([{"error": "unrecognized source"}])
+
+    if command == "between":
+        return json.dumps(recordsbetween( tbl_name, params["start"], params["end"] ))
+    if command == "bracket":
+        return json.dumps(bracket( tbl_name, params["datetime"]))
+    else:
+        return json.dumps([{"error": "unrecognized command"}])
 
