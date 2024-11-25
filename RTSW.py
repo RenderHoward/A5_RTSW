@@ -54,3 +54,24 @@ def get_cached_records(tbl_name, command):
     else:
         return json.dumps([{"error": "unrecognized command"}])
 
+@route('/admin/addsource')
+
+def add_new_source():
+    params = {key: val for (key, val) in request.params.items()}
+    response.content_type = 'application/json'
+
+    urlstr = params["URL"]
+
+    store = Persistence.Store("SolarDB", urlstr)
+
+    with urllib.request.urlopen(urlstr) as url:
+        data = json.load(url)
+
+    store.addtable(urlstr, data)
+
+    if store.tableexists():
+        return json.dumps([{"success" : "cache created", "sourceshortname" : store.table}])
+    else:
+        return json.dumps([{"error" : "could not create a cache"}])
+
+run(host="0.0.0.0", port=8081, reloader=True)
